@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>صفحة الدفع</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 400px;
+      margin: auto;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    .wallet {
+      font-size: 16px;
+      word-break: break-all;
+      margin-bottom: 15px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #2c7ae7;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #1d5fb5;
+    }
+    canvas {
+      margin: 20px auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🚀 أرسل الدفع إلى العنوان التالي</h2>
+    <div class="wallet" id="wallet">جاري التحميل...</div>
+    <canvas id="qrcode"></canvas>
+    <button onclick="copyWallet()">📋 نسخ العنوان</button>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script>
+    const walletFile = "https://yourdomain.com/wallets/mysite1.txt";
+
+    async function loadWallet() {
+      try {
+        const res = await fetch(walletFile);
+        const wallet = (await res.text()).trim();
+        document.getElementById("wallet").innerText = wallet;
+
+        // توليد الباركود
+        QRCode.toCanvas(document.getElementById('qrcode'), wallet, {
+          width: 200
+        }, function (error) {
+          if (error) console.error(error);
+        });
+
+        window.walletAddress = wallet;
+      } catch (e) {
+        document.getElementById("wallet").innerText = "⚠️ خطأ في تحميل العنوان";
+      }
+    }
+
+    function copyWallet() {
+      navigator.clipboard.writeText(window.walletAddress || "")
+        .then(() => alert("✅ تم نسخ العنوان!"))
+        .catch(() => alert("❌ فشل في النسخ."));
+    }
+
+    loadWallet();
+  </script>
+</body>
+</html>
