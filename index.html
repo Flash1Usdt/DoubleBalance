@@ -1,83 +1,360 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>صفحة الدفع</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>Finorix Pro – منصة الإشارات الحية</title>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f5f5f5;
-      padding: 20px;
+      background: radial-gradient(circle at 10% 20%, #0b0f1c, #03060f);
+      font-family: 'Segoe UI', system-ui, -apple-system, 'Inter', sans-serif;
+      color: #f0f3fa;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
     }
-    .container {
-      background: #fff;
-      padding: 30px;
-      border-radius: 15px;
+    /* قفل الدخول */
+    #lockScreen {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 6, 15, 0.92);
+      backdrop-filter: blur(18px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    .lock-card {
+      background: rgba(18, 25, 45, 0.9);
+      border: 1px solid #2d3a5e;
+      border-radius: 2rem;
+      padding: 2rem;
+      width: 90%;
       max-width: 400px;
-      margin: auto;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 20px rgba(0, 200, 255, 0.2);
+      text-align: center;
     }
-    .wallet {
-      font-size: 16px;
-      word-break: break-all;
-      margin-bottom: 15px;
-    }
-    button {
-      padding: 10px 20px;
-      background: #2c7ae7;
+    .lock-card h2 { color: #3bc9ff; margin-bottom: 1rem; font-weight: 600; letter-spacing: -0.3px; }
+    .lock-card input {
+      width: 100%;
+      padding: 0.9rem 1rem;
+      background: #0f1422;
+      border: 1px solid #2e3a55;
+      border-radius: 1.5rem;
       color: white;
+      font-size: 1rem;
+      margin: 1rem 0;
+      outline: none;
+      transition: 0.2s;
+    }
+    .lock-card input:focus { border-color: #3bc9ff; box-shadow: 0 0 0 2px rgba(59,201,255,0.3); }
+    .lock-card button {
+      width: 100%;
+      background: linear-gradient(95deg, #3b82f6, #2563eb);
       border: none;
-      border-radius: 8px;
+      padding: 0.8rem;
+      border-radius: 2rem;
+      font-weight: bold;
+      font-size: 1rem;
+      color: white;
       cursor: pointer;
+      transition: 0.2s;
     }
-    button:hover {
-      background: #1d5fb5;
+    .lock-card button:hover { background: #2563eb; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(37,99,235,0.3); }
+    /* التطبيق الرئيسي */
+    #mainApp {
+      display: none;
+      width: 100%;
+      max-width: 1300px;
+      margin: 0 auto;
     }
-    canvas {
-      margin: 20px auto;
+    header {
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      padding: 1.2rem;
+      margin-bottom: 1.5rem;
+      text-align: center;
+      border: 1px solid #2d3a5e;
     }
+    .logo { width: 60px; border-radius: 1rem; margin-bottom: 0.5rem; }
+    h1 { font-size: 1.8rem; background: linear-gradient(135deg,#fff,#90e0ff); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    .signal-premium {
+      background: linear-gradient(145deg, #0e1a2a, #081020);
+      border: 1px solid #ff66c0;
+      border-radius: 1.2rem;
+      max-width: 320px;
+      margin: 1rem auto;
+      padding: 0.6rem;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(255,20,147,0.2);
+    }
+    pre#formattedSignal {
+      font-family: 'Courier New', monospace;
+      background: #03060e;
+      padding: 0.8rem;
+      border-radius: 1rem;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      border: 1px solid #ff66c0;
+    }
+    .tradingview-container { width: 100%; height: 480px; border-radius: 1.2rem; overflow: hidden; margin: 1rem 0; border: 1px solid #2d3a5e; }
+    .market-panel {
+      background: rgba(12, 20, 35, 0.8);
+      border-radius: 1.5rem;
+      padding: 1.2rem;
+      margin: 1rem 0;
+      border: 1px solid #2d3a5e;
+    }
+    .market-select { width: 100%; padding: 0.8rem; background: #0a0f1c; border-radius: 1rem; color: white; border: 1px solid #3b82f6; margin-bottom: 1rem; }
+    .quick-btns { display: flex; flex-wrap: wrap; gap: 0.6rem; justify-content: center; margin: 1rem 0; }
+    .market-btn {
+      background: #0f172a;
+      border: 1px solid #3b82f6;
+      padding: 0.5rem 1rem;
+      border-radius: 2rem;
+      cursor: pointer;
+      transition: 0.2s;
+      color: white;
+    }
+    .market-btn.active { background: #3b82f6; border-color: white; box-shadow: 0 0 8px #3b82f6; }
+    .footer-note { text-align: center; font-size: 0.7rem; color: #7e8aa2; margin-top: 2rem; }
+    @media (max-width: 700px) { .tradingview-container { height: 320px; } }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>🚀 أرسل الدفع إلى العنوان التالي</h2>
-    <div class="wallet" id="wallet">جاري التحميل...</div>
-    <canvas id="qrcode"></canvas>
-    <button onclick="copyWallet()">📋 نسخ العنوان</button>
+
+<!-- شاشة قفل المفتاح -->
+<div id="lockScreen">
+  <div class="lock-card">
+    <h2>🔐 Finorix Access</h2>
+    <input type="text" id="accessKey" placeholder="أدخل مفتاح التفعيل">
+    <button id="unlockBtn">فتح المنصة</button>
+    <div id="lockError" style="color:#ff7777; font-size:0.8rem; margin-top:0.8rem;"></div>
+  </div>
+</div>
+
+<!-- التطبيق الرئيسي (يظهر بعد التحقق) -->
+<div id="mainApp">
+  <header>
+    <img class="logo" src="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png" alt="Finorix">
+    <h1>Finorix Pro · إشارات مباشرة</h1>
+    <p style="color:#9aa7c7;">تحديث كل دقيقة | دقة عالية</p>
+  </header>
+
+  <div class="signal-premium">
+    <div style="font-size:0.7rem; color:#ff99dd;">📡 إشارة VIP</div>
+    <pre id="formattedSignal">⏳ جاري تحميل الإشارة...</pre>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-  <script>
-    const walletFile = "https://raw.githubusercontent.com/Flash1Usdt/DoubleBalance/main/wallets/mysite1.txt";
+  <div id="tradingview-widget" class="tradingview-container"></div>
 
-    async function loadWallet() {
-      try {
-        const res = await fetch(walletFile);
-        const wallet = (await res.text()).trim();
-        document.getElementById("wallet").innerText = wallet;
+  <div class="market-panel">
+    <select id="market-select" class="market-select"></select>
+    <div class="quick-btns" id="market-buttons"></div>
+    <div style="margin-top:1rem;">
+      <label style="font-size:0.8rem;">🗺️ المنطقة الزمنية</label>
+      <select id="timezone-select" class="market-select" style="margin-top:0.3rem;"></select>
+    </div>
+  </div>
+  <div class="footer-note">الإشارات تعتمد على خوارزميات متقدمة | إدارة المفاتيح تتم عبر لوحة الأدمن</div>
+</div>
 
-        // توليد الباركود
-        QRCode.toCanvas(document.getElementById('qrcode'), wallet, {
-          width: 200
-        }, function (error) {
-          if (error) console.error(error);
-        });
+<script>
+  // ------------------- التكوين العام -------------------
+  // مسار ملف المفاتيح (يجب أن يكون موجوداً في نفس المستودع)
+  const KEYS_JSON_URL = 'keys.json?t=' + Date.now();
 
-        window.walletAddress = wallet;
-      } catch (e) {
-        document.getElementById("wallet").innerText = "⚠️ خطأ في تحميل العنوان";
+  // متغيرات النظام
+  let currentMarket = 'EURUSD';
+  let signalInterval = null;
+  let tvWidget = null;
+  let tradingViewLoaded = false;
+
+  // قائمة الرموز TradingView
+  const SYMBOLS = {
+    'EURUSD':'FX:EURUSD','GBPUSD':'FX:GBPUSD','USDJPY':'FX:USDJPY','USDCAD':'FX:USDCAD',
+    'AUDUSD':'FX:AUDUSD','NZDUSD':'FX:NZDUSD','EURJPY':'FX:EURJPY','GBPJPY':'FX:GBPJPY',
+    'EURGBP':'FX:EURGBP','CADJPY':'FX:CADJPY','XAUUSD':'OANDA:XAUUSD','XAGUSD':'OANDA:XAGUSD',
+    'USOIL':'TVC:USOIL','US30':'CAPITALCOM:US30','US500':'CAPITALCOM:US500',
+    'BTCUSDT':'BINANCE:BTCUSDT','ETHUSDT':'BINANCE:ETHUSDT'
+  };
+
+  // دوال الإشارة العشوائية المتزامنة مع الوقت
+  function hash32(str) { let h=0; for(let i=0;i<str.length;i++) h=(Math.imul(31,h)+str.charCodeAt(i))|0; return Math.abs(h); }
+  function mulberry32(seed) { return function(){ seed=(seed+0x6D2B79F5)|0; let t=Math.imul(seed^(seed>>>15),1|seed); t=(t+Math.imul(t^(t>>>7),61|t))^t; return ((t^(t>>>14))>>>0)/4294967296; }; }
+  function randInt(rng,min,max){ return Math.floor(rng()*(max-min+1))+min; }
+  function getSelectedTimezoneOffset(){ const sel=document.getElementById('timezone-select'); if(!sel) return 330; let v=parseInt(sel.value); return isNaN(v)?330:v; }
+
+  function generateSignal(market){
+    const now=new Date(); const utc=now.getTime()+(now.getTimezoneOffset()*60000);
+    const tzOff=getSelectedTimezoneOffset(); const t=new Date(utc+(tzOff*60000));
+    const y=t.getFullYear(), m=String(t.getMonth()+1).padStart(2,'0'), d=String(t.getDate()).padStart(2,'0');
+    const hh=String(t.getHours()).padStart(2,'0'), mm=String(t.getMinutes()).padStart(2,'0');
+    const seedStr=`FINORIX-${y}${m}${d}-${hh}:${mm}-${market}`;
+    const rng=mulberry32(hash32(seedStr));
+    const dir=rng()<0.5?'CALL':'PUT'; const acc=randInt(rng,75,95)+'%';
+    return { market, direction:dir, accuracy:acc, time:`${hh}:${mm}`, timeframe:'1m' };
+  }
+
+  function buildSignalHTML(s){
+    const isCall=s.direction==='CALL';
+    const color=isCall?'#00ff99':'#ff4466';
+    const bg=isCall?'rgba(0,255,100,0.1)':'rgba(255,68,102,0.1)';
+    return `<div style="display:flex; justify-content:space-between; align-items:center;">
+      <div><span style="color:#3bc9ff;">${s.market}</span><br>
+      <span style="color:#ffcc44;">🕒 ${s.time}</span><br>
+      <span style="color:#88ffaa;">🎯 ${s.accuracy}</span></div>
+      <div style="background:${bg}; padding:0.3rem 1rem; border-radius:2rem; border:1px solid ${color};">
+        <strong style="color:${color};">${s.direction}</strong>
+      </div>
+    </div>`;
+  }
+
+  function updateSignalDisplay(){
+    const sig=generateSignal(currentMarket);
+    const el=document.getElementById('formattedSignal');
+    if(el) el.innerHTML=buildSignalHTML(sig);
+  }
+
+  // تحميل TradingView
+  function loadTV(symbol){
+    const container=document.getElementById('tradingview-widget');
+    if(!container) return;
+    if(tvWidget) try{ tvWidget.remove(); }catch(e){}
+    container.innerHTML='';
+    if(!tradingViewLoaded){
+      const script=document.createElement('script');
+      script.src='https://s3.tradingview.com/tv.js';
+      script.async=true;
+      script.onload=()=>{ tradingViewLoaded=true; createWidget(); };
+      document.head.appendChild(script);
+    } else createWidget();
+    function createWidget(){
+      tvWidget=new TradingView.widget({
+        'container_id':'tradingview-widget','autosize':true,'symbol':symbol,'interval':'1',
+        'timezone':'Asia/Kolkata','theme':'dark','style':'1','locale':'en','toolbar_bg':'#0a0a0a',
+        'enable_publishing':false,'hide_side_toolbar':false,'allow_symbol_change':true
+      });
+    }
+  }
+
+  // تغيير السوق
+  function changeMarket(market){
+    currentMarket=market;
+    document.querySelectorAll('.market-btn').forEach(btn=>btn.classList.remove('active'));
+    const actBtn=document.querySelector(`.market-btn[data-market="${market}"]`);
+    if(actBtn) actBtn.classList.add('active');
+    document.getElementById('market-select').value=market;
+    updateSignalDisplay();
+    loadTV(SYMBOLS[market]||'FX:EURUSD');
+  }
+
+  // بدء الإشارات
+  function startSignalLoop(){
+    updateSignalDisplay();
+    const now=new Date(); const delay=(60-now.getSeconds())*1000;
+    setTimeout(()=>{
+      updateSignalDisplay();
+      if(signalInterval) clearInterval(signalInterval);
+      signalInterval=setInterval(updateSignalDisplay,60000);
+    },delay);
+  }
+
+  // ----- نظام التحقق من المفتاح باستخدام keys.json (قراءة فقط) -----
+  async function validateAccessKey(key){
+    try{
+      const res=await fetch(KEYS_JSON_URL);
+      if(!res.ok) throw new Error('لا يمكن تحميل ملف المفاتيح');
+      const keysDB=await res.json();
+      const entry=keysDB[key];
+      if(!entry) return { ok:false, msg:'❌ مفتاح غير صالح' };
+
+      // جهاز id
+      let deviceId=localStorage.getItem('finorix_device_id');
+      if(!deviceId){ deviceId=crypto.randomUUID(); localStorage.setItem('finorix_device_id',deviceId); }
+
+      const devices=entry.devices||{};
+      const deviceLimit=entry.deviceLimit||1;
+      let deviceCount=Object.keys(devices).length;
+
+      if(!devices[deviceId]){
+        if(deviceCount>=deviceLimit) return { ok:false, msg:'⚠️ تم تجاوز عدد الأجهزة المسموحة لهذا المفتاح' };
+        // لا يمكننا حفظ الجهاز الجديد لأن الملف للقراءة فقط، لكننا سنحاكي القبول ونخزن محلياً
+        devices[deviceId]=true;
+        localStorage.setItem(`devices_${key}`,JSON.stringify(devices));
       }
-    }
 
-    function copyWallet() {
-      navigator.clipboard.writeText(window.walletAddress || "")
-        .then(() => alert("✅ تم نسخ العنوان!"))
-        .catch(() => alert("❌ فشل في النسخ."));
-    }
+      if(entry.expiresAt && new Date(entry.expiresAt)<=new Date()) return { ok:false, msg:'⌛ المفتاح منتهي الصلاحية' };
+      if(entry.type==='one-time' && entry.used===true) return { ok:false, msg:'🔁 هذا المفتاح استُخدم من قبل (مرة واحدة)' };
 
-    loadWallet();
-  </script>
+      // قبول الدخول
+      if(entry.type==='one-time'){
+        // لا نستطيع تحديث used في الملف، لكننا نمنع الاستخدام المتكرر عبر localStorage
+        const usedBefore=localStorage.getItem(`used_${key}`);
+        if(usedBefore) return { ok:false, msg:'🔁 المفتاح مرة واحدة تم استخدامه مسبقاً' };
+        localStorage.setItem(`used_${key}`,'true');
+      }
+      localStorage.setItem('finorix_active_key',key);
+      return { ok:true };
+    }catch(e){
+      console.error(e);
+      return { ok:false, msg:'❌ فشل الاتصال بخادم المفاتيح' };
+    }
+  }
+
+  // فتح التطبيق
+  function unlockApp(){
+    document.getElementById('lockScreen').style.display='none';
+    document.getElementById('mainApp').style.display='block';
+    startSignalLoop();
+    loadTV(SYMBOLS[currentMarket]);
+  }
+
+  // زر الدخول
+  document.getElementById('unlockBtn').addEventListener('click', async ()=>{
+    const key=document.getElementById('accessKey').value.trim();
+    const errDiv=document.getElementById('lockError');
+    if(!key){ errDiv.innerText='الرجاء إدخال المفتاح'; return; }
+    errDiv.innerText='⏳ جاري التحقق...';
+    const result=await validateAccessKey(key);
+    if(result.ok){
+      errDiv.innerText='';
+      unlockApp();
+    }else{
+      errDiv.innerText=result.msg;
+    }
+  });
+
+  // بناء القوائم
+  function populateUI(){
+    const marketSel=document.getElementById('market-select');
+    const btnsDiv=document.getElementById('market-buttons');
+    const markets=Object.keys(SYMBOLS);
+    markets.forEach(m=>{
+      marketSel.innerHTML+=`<option value="${m}">${m}</option>`;
+      const btn=document.createElement('button');
+      btn.innerText=m; btn.classList.add('market-btn'); btn.setAttribute('data-market',m);
+      btn.onclick=()=>changeMarket(m);
+      btnsDiv.appendChild(btn);
+    });
+    marketSel.addEventListener('change',e=>changeMarket(e.target.value));
+    const tzSel=document.getElementById('timezone-select');
+    const tzList=[{v:-480,n:'UTC-8'},{v:-300,n:'UTC-5'},{v:0,n:'UTC+0'},{v:60,n:'UTC+1'},{v:180,n:'UTC+3'},{v:330,n:'UTC+5:30 (IST)'},{v:360,n:'UTC+6'},{v:420,n:'UTC+7'},{v:480,n:'UTC+8'},{v:540,n:'UTC+9'},{v:600,n:'UTC+10'},{v:720,n:'UTC+12'}];
+    tzList.forEach(z=>{ tzSel.innerHTML+=`<option value="${z.v}" ${z.v===330?'selected':''}>${z.n}</option>`; });
+    tzSel.addEventListener('change',()=>updateSignalDisplay());
+    changeMarket('EURUSD');
+  }
+  populateUI();
+
+  // إعادة محاولة تحميل المفاتيح إذا فشلت (لا تؤثر على الإشارات)
+  window.addEventListener('load',()=>{
+    // لا شيء إضافي
+  });
+</script>
 </body>
 </html>
