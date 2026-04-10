@@ -1,0 +1,16 @@
+{
+  "DEMO2025": {
+    "deviceLimit": 3,
+    "devices": {},
+    "expiresAt": "2027-12-31T23:59",
+    "type": "unlimited",
+    "used": false
+  },
+  "VIPONETIME": {
+    "deviceLimit": 1,
+    "devices": {},
+    "expiresAt": null,
+    "type": "one-time",
+    "used": false
+  }
+}
