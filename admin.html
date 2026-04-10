@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VIP4 Admin – إدارة المفاتيح (GitHub API)</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { background:#0a0f1f; font-family: 'Segoe UI', sans-serif; color:#eef; padding: 2rem; }
+    .container { max-width:1400px; margin:0 auto; }
+    .card { background:#111827; border-radius: 1.5rem; padding: 1.5rem; margin-bottom: 2rem; border:1px solid #2d3a5e; }
+    h1, h2 { color:#3bc9ff; margin-bottom: 1rem; }
+    input, select, textarea { width:100%; padding:0.7rem; background:#0f172a; border:1px solid #2e3a55; border-radius:1rem; color:white; margin-bottom:0.8rem; }
+    button { background:#3b82f6; border:none; padding:0.6rem 1.2rem; border-radius:2rem; color:white; cursor:pointer; font-weight:bold; margin:0.2rem; }
+    .danger { background:#dc2626; }
+    .warning { background:#f59e0b; }
+    .key-item { background:#1e293b; border-radius:1rem; padding:1rem; margin-bottom:1rem; display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem; }
+    .key-code { font-family:monospace; font-size:1.2rem; font-weight:bold; color:#facc15; }
+    .badge { background:#334155; padding:0.2rem 0.6rem; border-radius:1rem; font-size:0.7rem; }
+    .token-input { background:#1e1e2f; border-color:#facc15; }
+    hr { border-color:#2d3a5e; margin:1rem 0; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🔐 VIP4 · إدارة المفاتيح (GitHub)</h1>
+  <div class="card">
+    <h2>⚙️ إعدادات GitHub API</h2>
+    <label>🔑 Personal Access Token (صلاحية repo)</label>
+    <input type="password" id="githubToken" placeholder="أدخل التوكن (ghp_...)" class="token-input">
+    <label>📁 اسم المستودع (owner/repo)</label>
+    <input type="text" id="repoName" placeholder="مثال: ahmed/vip4-keys">
+    <label>📄 مسار ملف keys.json</label>
+    <input type="text" id="filePath" value="keys.json">
+    <button id="initBtn">✅ تهيئة وتحميل المفاتيح</button>
+    <div id="apiStatus" style="margin-top:0.8rem; font-size:0.8rem;"></div>
+  </div>
+
+  <div class="card">
+    <h2>➕ إضافة مفتاح جديد</h2>
+    <div style="display:flex; flex-wrap:wrap; gap:0.8rem;">
+      <input type="text" id="newKey" placeholder="المفتاح (مثال: GOLD2025)" style="flex:2">
+      <input type="number" id="newLimit" placeholder="حد الأجهزة" value="1" style="flex:1">
+      <input type="datetime-local" id="newExpiry" style="flex:1.5">
+      <select id="newType" style="flex:1">
+        <option value="unlimited">غير محدود</option>
+        <option value="one-time">مرة واحدة</option>
+      </select>
+      <button id="addKeyBtn">➕ إضافة</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📋 قائمة المفاتيح الموجودة</h2>
+    <div id="keysContainer">⏳ لم يتم التهيئة بعد</div>
+  </div>
+</div>
+
+<script>
+  // متغيرات الجلسة
+  let currentKeys = {};
+  let repo = '', path = '', token = '';
+
+  // دوال مساعدة
+  async function fetchFileShaAndContent() {
+    const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+    const res = await fetch(url, { headers: { 'Authorization': `token ${token}` } });
+    if (!res.ok) throw new Error(`فشل جلب الملف: ${res.status}`);
+    const data = await res.json();
+    return { sha: data.sha, content: atob(data.content) };
+  }
+
+  async function updateGitHubFile(contentObj, commitMsg) {
+    const { sha } = await fetchFileShaAndContent();
+    const newContent = btoa(unescape(encodeURIComponent(JSON.stringify(contentObj, null, 2))));
+    const url = `https://api.github.com/repos/${repo}/contents/${path}`;
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: commitMsg, content: newContent, sha })
+    });
+    if (!res.ok) throw new Error('فشل تحديث الملف');
+    return await res.json();
+  }
+
+  async function loadKeysFromGit() {
+    try {
+      const { content } = await fetchFileShaAndContent();
+      currentKeys = JSON.parse(content);
+      renderKeys();
+      document.getElementById('apiStatus').innerHTML = '✅ تم تحميل المفاتيح بنجاح';
+    } catch(e) {
+      document.getElementById('apiStatus').innerHTML = `❌ خطأ: ${e.message}`;
+      console.error(e);
+    }
+  }
+
+  function renderKeys() {
+    const container = document.getElementById('keysContainer');
+    if (!currentKeys || Object.keys(currentKeys).length===0) {
+      container.innerHTML = '<div class="key-item">⚠️ لا توجد مفاتيح بعد، أضف مفتاحاً جديداً</div>';
+      return;
+    }
+    let html = '';
+    for (const [k, val] of Object.entries(currentKeys)) {
+      const devicesCount = val.devices ? Object.keys(val.devices).length : 0;
+      const limit = val.deviceLimit || 1;
+      const expiry = val.expiresAt ? new Date(val.expiresAt).toLocaleString() : 'لا ينتهي';
+      const typeLabel = val.type === 'one-time' ? 'مرة واحدة' : 'غير محدود';
+      const usedBadge = (val.type === 'one-time' && val.used) ? ' <span class="badge" style="background:#b91c1c;">مُستخدم</span>' : '';
+      html += `
+        <div class="key-item">
+          <div>
+            <div class="key-code">🔑 ${k}${usedBadge}</div>
+            <div style="font-size:0.8rem;">📱 الأجهزة: ${devicesCount}/${limit} | ⏱️ ${typeLabel} | 📅 ${expiry}</div>
+          </div>
+          <div>
+            <button class="warning" onclick="editKey('${k}')">✏️ تعديل</button>
+            <button class="danger" onclick="deleteKey('${k}')">🗑️ حذف</button>
+          </div>
+        </div>
+      `;
+    }
+    container.innerHTML = html;
+  }
+
+  // إضافة مفتاح
+  window.addKey = async function() {
+    const newKey = document.getElementById('newKey').value.trim();
+    const newLimit = parseInt(document.getElementById('newLimit').value);
+    const newExpiry = document.getElementById('newExpiry').value || null;
+    const newType = document.getElementById('newType').value;
+    if (!newKey) { alert('أدخل المفتاح'); return; }
+    if (currentKeys[newKey]) { alert('المفتاح موجود مسبقاً'); return; }
+    currentKeys[newKey] = {
+      deviceLimit: newLimit,
+      devices: {},
+      expiresAt: newExpiry,
+      type: newType,
+      used: false
+    };
+    try {
+      await updateGitHubFile(currentKeys, `إضافة مفتاح ${newKey}`);
+      alert('✅ تم إضافة المفتاح وتحديث GitHub');
+      await loadKeysFromGit();
+      document.getElementById('newKey').value = '';
+      document.getElementById('newLimit').value = '1';
+      document.getElementById('newExpiry').value = '';
+    } catch(e) { alert('خطأ في الحفظ: '+e.message); }
+  };
+
+  // حذف مفتاح
+  window.deleteKey = async function(key) {
+    if (!confirm(`هل تريد حذف المفتاح ${key}؟ سيتم منع أي مستخدم يستخدمه.`)) return;
+    delete currentKeys[key];
+    try {
+      await updateGitHubFile(currentKeys, `حذف مفتاح ${key}`);
+      alert('تم الحذف');
+      await loadKeysFromGit();
+    } catch(e) { alert(e.message); }
+  };
+
+  // تعديل مفتاح (سريع)
+  window.editKey = async function(key) {
+    const old = currentKeys[key];
+    const newLimit = prompt('حد الأجهزة الجديد:', old.deviceLimit);
+    if (newLimit === null) return;
+    const newExpiry = prompt('تاريخ الانتهاء (YYYY-MM-DDTHH:MM) أو اتركه فارغاً:', old.expiresAt || '');
+    const newType = prompt('نوع المفتاح (unlimited / one-time):', old.type);
+    if (newType !== 'unlimited' && newType !== 'one-time') { alert('نوع غير صحيح'); return; }
+    old.deviceLimit = parseInt(newLimit);
+    old.expiresAt = newExpiry === '' ? null : newExpiry;
+    old.type = newType;
+    try {
+      await updateGitHubFile(currentKeys, `تعديل مفتاح ${key}`);
+      alert('تم التعديل');
+      await loadKeysFromGit();
+    } catch(e) { alert(e.message); }
+  };
+
+  // تهيئة الاتصال
+  document.getElementById('initBtn').addEventListener('click', async () => {
+    token = document.getElementById('githubToken').value.trim();
+    repo = document.getElementById('repoName').value.trim();
+    path = document.getElementById('filePath').value.trim();
+    if (!token || !repo) { alert('أدخل التوكن واسم المستودع'); return; }
+    document.getElementById('apiStatus').innerHTML = '⏳ جاري التحميل...';
+    await loadKeysFromGit();
+    // ربط أزرار الإضافة بعد التهيئة
+    document.getElementById('addKeyBtn').onclick = () => addKey();
+  });
+</script>
+</body>
+</html>
